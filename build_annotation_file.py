@@ -59,7 +59,7 @@ def main(src_path, dest_path):
     if all([fil.endswith(('.jpg','.xml')) for fil in os.listdir(src_path)]):#True, When all images are stored in single directory
         print('Single directory cotains all images')
         xml_df =xml_to_df(src_path, subdirectories= False)
-        xml_df['filename'] = xml_df['filename'].apply(lambda x: src_path+ x)
+        xml_df['filename'] = xml_df['filename'].apply(lambda x: os.path.join(src_path, x))
     else:#True, When images are stored in various respective classes subdirectory
         print('Multiple subdirectories contain images')
         xml_df= xml_to_df(src_path)
@@ -67,7 +67,9 @@ def main(src_path, dest_path):
     df_txt = pd.DataFrame()    
     df_txt = xml_df[cols_req].apply(lambda x : ','.join(x.astype(str)),axis=1)
     
-    df_txt.to_csv(dest_path, header= None, index=None,sep=' ')#the text file saved is error prone as it contains few augmented image with wrong names, that is due to intermediate csv file, which is now avoided
+    df_txt.to_csv(dest_path, header= None, index=None,sep=' ')
+    #Note: the text file saved is error prone as it contained few augmented images with wrong names, it first occured in the intermediate csv file
+    #conversion. It is avoided by manually changing names of those images both in annotation.txt and their respective directories, post this generation of annotation file through this code.
     print('\nSuccessfully written all xmls to txt.')
 
 if __name__=="__main__":
