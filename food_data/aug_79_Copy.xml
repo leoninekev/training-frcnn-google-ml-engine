@@ -1,13 +1,13 @@
 <annotation>
 	<folder>dosa</folder>
-	<filename>aug_6 - Copy.jpg</filename>
-	<path>D:\tf_obj_dataset\dosa\aug_6 - Copy.jpg</path>
+	<filename>aug_79_Copy.jpg</filename>
+	<path>D:\tf_obj_dataset\dosa\aug_79_Copy.jpg</path>
 	<source>
 		<database>Unknown</database>
 	</source>
 	<size>
-		<width>1152</width>
-		<height>1080</height>
+		<width>924</width>
+		<height>664</height>
 		<depth>3</depth>
 	</size>
 	<segmented>0</segmented>
@@ -17,10 +17,10 @@
 		<truncated>0</truncated>
 		<difficult>0</difficult>
 		<bndbox>
-			<xmin>197</xmin>
-			<ymin>411</ymin>
-			<xmax>804</xmax>
-			<ymax>764</ymax>
+			<xmin>165</xmin>
+			<ymin>182</ymin>
+			<xmax>756</xmax>
+			<ymax>363</ymax>
 		</bndbox>
 	</object>
 </annotation>
