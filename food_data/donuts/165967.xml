@@ -1,0 +1,26 @@
+<annotation>
+	<folder>donuts</folder>
+	<filename>165967.jpg</filename>
+	<path>D:\tf_obj_dataset\donuts\165967.jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>384</width>
+		<height>512</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>donuts</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>108</xmin>
+			<ymin>242</ymin>
+			<xmax>280</xmax>
+			<ymax>439</ymax>
+		</bndbox>
+	</object>
+</annotation>

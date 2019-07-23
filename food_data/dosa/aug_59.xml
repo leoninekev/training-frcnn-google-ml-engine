@@ -1,0 +1,26 @@
+<annotation>
+	<folder>dosa</folder>
+	<filename>aug_59.jpg</filename>
+	<path>D:\tf_obj_dataset\dosa\aug_59.jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>4310</width>
+		<height>2868</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>dosa</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>33</xmin>
+			<ymin>362</ymin>
+			<xmax>2997</xmax>
+			<ymax>2662</ymax>
+		</bndbox>
+	</object>
+</annotation>
