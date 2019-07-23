@@ -7,7 +7,8 @@ import time
 from optparse import OptionParser
 
 parser= OptionParser()
-parser.add_option("-s", "--source", dest="image_dir",help="Path to directory containing images & xml", default= os.path.join(os.getcwd(), 'food_data'))#default assumes images are in folder named food_data
+parser.add_option("-s", "--source", dest="image_dir",help="Path to directory containing images & xmls locally", default= os.path.join(os.getcwd(), 'food_data'))#default assumes images are in folder named food_data
+parser.add_option("-b", "--bucket_path", dest="gcloud_bucket",help="gCloud Path to directory containing images")
 parser.add_option("-d","--destination", dest="save_to", help= "Path to save annotation txt file", default = os.path.join(os.getcwd(),'annotations.txt'))
 
 (options, args) = parser.parse_args()
@@ -54,27 +55,30 @@ def xml_to_df(path, subdirectories = True):
     return xml_df
 
 
-def main(src_path, dest_path):
+def main(src_path, gcloud_path, dest_path):
     cols_req = ['filename','xmin', 'ymin', 'xmax', 'ymax','classes']
     if all([fil.endswith(('.jpg','.xml')) for fil in os.listdir(src_path)]):#True, When all images are stored in single directory
         print('Single directory cotains all images')
         xml_df =xml_to_df(src_path, subdirectories= False)
-        xml_df['filename'] = xml_df['filename'].apply(lambda x: os.path.join(src_path, x))
+        xml_df['filename'] = xml_df['filename'].apply(lambda x: os.path.join(gcloud_path, x))#appending gcloud_bucket path to names
     else:#True, When images are stored in various respective classes subdirectory
         print('Multiple subdirectories contain images')
         xml_df= xml_to_df(src_path)
-        xml_df['filename'] = xml_df[[cols_req[-1], 'filename']].apply(lambda x: os.path.join(src_path,'\\'.join(x.astype(str))),axis=1)
+        xml_df['filename'] = xml_df[[cols_req[-1], 'filename']].apply(lambda x: os.path.join(gcloud_path,'/'.join(x.astype(str))),axis=1)
     df_txt = pd.DataFrame()    
     df_txt = xml_df[cols_req].apply(lambda x : ','.join(x.astype(str)),axis=1)
     
     df_txt.to_csv(dest_path, header= None, index=None,sep=' ')
-    #Note: the text file saved is error prone as it contained few augmented images with wrong names, it first occured in the intermediate csv file
-    #conversion. It is avoided by manually changing names of those images both in annotation.txt and their respective directories, post this generation of annotation file through this code.
+    #Note: the text file saved is now rectified within code itself, by manually editing select xmls containing wrong image_names prior to running this script.
     print('\nSuccessfully written all xmls to txt.')
 
 if __name__=="__main__":
     tick = time.time()
     src_path = options.image_dir
+    gcloud_path = options.gcloud_bucket#if gcloud path is not give, following expression overwrites this one
+    if not options.gcloud_bucket:
+        print('Enter a VALID gcloud bucket path to directory containing images! Appending a dummy path for now. . .')
+        gcloud_path= 'gs://your_gcloud_bucket_name/food_data/'
     dest_path=options.save_to
-    main(src_path,dest_path)
+    main(src_path, gcloud_path, dest_path)
     print('Annotation file created at: {}\ntime elapsed: {}'.format(dest_path, time.time()-tick))
