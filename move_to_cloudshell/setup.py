@@ -18,9 +18,12 @@ import os
 
 NAME = 'trainer'
 VERSION = '0.1'
+REQUIRED_PACKAGES = ['pickle','PIL','tensorflow','itertools','keras','h5py','numpy']
+
 
 setup(
     name=NAME,
     version=VERSION,
-    packages=find_packages()
+    packages=find_packages(),
+    install_requires=REQUIRED_PACKAGES,    
     )
