@@ -11,17 +11,19 @@ from keras import backend as K
 from keras.optimizers import Adam, SGD, RMSprop
 from keras.layers import Input
 from keras.models import Model
-from keras_frcnn import config, data_generators
-from keras_frcnn import losses as losses
-import keras_frcnn.roi_helpers as roi_helpers
-from keras_frcnn.simple_parser import get_data
+
+import config, data_generators
+import losses as losses
+import roi_helpers
+from simple_parser import get_data
+
 from keras.utils import generic_utils
 
 sys.setrecursionlimit(40000)
 
 parser = OptionParser()
 
-parser.add_option("-p", "--path", dest="train_path", help="Path to training data(annotation.txt file).")
+parser.add_option("-p", "--path", dest="train_path", help="Path to training data(annotation.txt file).",default="gs://$BUCKET_NAME/train_on_gcloud/data.pickle")
 parser.add_option("-n", "--num_rois", type="int", dest="num_rois", help="Number of RoIs to process at once.", default=32)
 parser.add_option("--network", dest="network", help="Base network to use. Supports vgg or resnet50.", default='resnet50')
 parser.add_option("--hf", dest="horizontal_flips", help="Augment with horizontal flips in training. (Default=false).", action="store_true", default=False)
@@ -32,7 +34,7 @@ parser.add_option("--num_epochs", type="int", dest="num_epochs", help="Number of
 parser.add_option("--config_filename", dest="config_filename", help=
 				"Location to store all the metadata related to the training (to be used when testing).",
 				default="config.pickle")
-parser.add_option("--output_weight_path", dest="output_weight_path", help="Output path for weights.", default='model_frcnn.hdf5')
+parser.add_option("--output_weight_path", dest="output_weight_path", help="Output path for weights.",default='gs://$BUCKET_NAME/$JOB_NAME/model_frcnn.hdf5')
 parser.add_option("--input_weight_path", dest="input_weight_path", help="Input path for weights. If not specified, will try to load default weights provided by keras.")
 
 (options, args) = parser.parse_args()
@@ -82,10 +84,14 @@ print('Training images per class:')
 pprint.pprint(classes_count)
 print('Num classes (including bg) = {}'.format(len(classes_count)))
 
-config_output_filename = options.config_filename
+config_output_filename = options.config_filename#to test run & save config.pickle locally in cloudshell; For now
 
-with open(config_output_filename, 'wb') as config_f:
-	pickle.dump(C,config_f)
+def new_open(name, mode, buffering=-1):#to open & load files from gcloud storage
+        return file_io.FileIO(name, mode)
+
+
+with new_open(config_output_filename, 'wb') as config_f:
+	pickle.dump(C,config_f)#dumps config.pickle in cloudshell env
 	print('Config has been written to {}, and can be loaded when testing to ensure correct results'.format(config_output_filename))
 
 random.shuffle(all_imgs)

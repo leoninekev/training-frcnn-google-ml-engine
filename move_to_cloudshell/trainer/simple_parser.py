@@ -1,5 +1,19 @@
 import cv2
+from tensorflow.python.lib.io import file_io
+import io
+from PIL import Image
+import pickle
+
 import numpy as np
+
+def new_open(name, mode, buffering=-1):
+  return file_io.FileIO(name, mode)
+
+def url2img(uri):#function compliant for loading gs://url images 
+	file= new_open(uri, mode='rb')
+	file = file.read()
+	img= Image.open(io.BytesIO(file)).convert('RGB')
+	return np.asarray(img)
 
 def get_data(input_path):
 	found_bg = False
@@ -11,11 +25,13 @@ def get_data(input_path):
 
 	visualise = True
 	
-	with open(input_path,'r') as f:
+	with new_open(input_path,'rb') as fileout:#holds gs://dataframe.pickle
 
 		print('Parsing annotation files')
 
-		for line in f:
+		df_unpick = pickle.load(fileout)#unpickles data dictionary of type {0: 'gs:url-img.jpg,0,0,363,494,Apple', ... ,}
+
+		for line in df_unpick.values()
 			line_split = line.strip().split(',')
 			(filename,x1,y1,x2,y2,class_name) = line_split
 
@@ -33,7 +49,8 @@ def get_data(input_path):
 			if filename not in all_imgs:
 				all_imgs[filename] = {}
 				
-				img = cv2.imread(filename)
+				img = url2img(filename)
+				
 				(rows,cols) = img.shape[:2]
 				all_imgs[filename]['filepath'] = filename
 				all_imgs[filename]['width'] = cols

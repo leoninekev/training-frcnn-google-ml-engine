@@ -2,6 +2,16 @@ import cv2
 import numpy as np
 import copy
 
+from tensorflow.python.lib.io import file_io
+import io
+
+from PIL import Image
+
+def url2img(uri):#IO function compliant to loading gs:// url images 
+	file= file_io.FileIO(uri, mode='rb')
+	file = file.read()
+	img= Image.open(io.BytesIO(file)).convert('RGB')
+	return np.asarray(img)
 
 def augment(img_data, config, augment=True):
 	assert 'filepath' in img_data
@@ -11,7 +21,7 @@ def augment(img_data, config, augment=True):
 
 	img_data_aug = copy.deepcopy(img_data)
 
-	img = cv2.imread(img_data_aug['filepath'])
+	img = url2img(img_data_aug['filepath'])
 
 	if augment:
 		rows, cols = img.shape[:2]
