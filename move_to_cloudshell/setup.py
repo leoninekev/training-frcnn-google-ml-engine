@@ -16,9 +16,9 @@
 from setuptools import setup, find_packages
 import os
 
-NAME = 'trainer'
+NAME = 'frcnn_trainer'
 VERSION = '0.1'
-REQUIRED_PACKAGES = ['pickle','PIL','tensorflow','itertools','keras','h5py','numpy']
+REQUIRED_PACKAGES = ['pillow','keras','h5py']
 
 
 setup(
