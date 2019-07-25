@@ -7,6 +7,8 @@ import numpy as np
 from optparse import OptionParser
 import pickle
 
+from tensorflow.python.lib.io import file_io
+
 from keras import backend as K
 from keras.optimizers import Adam, SGD, RMSprop
 from keras.layers import Input
@@ -15,32 +17,42 @@ from keras.models import Model
 import config, data_generators
 import losses as losses
 import roi_helpers
-from simple_parser import get_data
-
 from keras.utils import generic_utils
 
 sys.setrecursionlimit(40000)
 
 parser = OptionParser()
 
-parser.add_option("-p", "--path", dest="train_path", help="Path to training data(annotation.txt file).",default="gs://$BUCKET_NAME/train_on_gcloud/data.pickle")
+parser.add_option("-p", "--path", dest="train_path", help="Path to training data(annotation.txt file).",default="gs://input-your-bucket-name/train_on_gcloud/annotations.txt")# /data.pickle -- for pickled annotations 
+parser.add_option("-o", "--parser", dest="parser", help="Parser to use. One of simple_text or simple_pickle",
+                  default="simple")# simple_pick --for simple_parser_pkl
+
 parser.add_option("-n", "--num_rois", type="int", dest="num_rois", help="Number of RoIs to process at once.", default=32)
 parser.add_option("--network", dest="network", help="Base network to use. Supports vgg or resnet50.", default='resnet50')
 parser.add_option("--hf", dest="horizontal_flips", help="Augment with horizontal flips in training. (Default=false).", action="store_true", default=False)
 parser.add_option("--vf", dest="vertical_flips", help="Augment with vertical flips in training. (Default=false).", action="store_true", default=False)
 parser.add_option("--rot", "--rot_90", dest="rot_90", help="Augment with 90 degree rotations in training. (Default=false).",
 				  action="store_true", default=False)
-parser.add_option("--num_epochs", type="int", dest="num_epochs", help="Number of epochs.", default=2000)
+parser.add_option("--num_epochs", type="int", dest="num_epochs", help="Number of epochs.", default=1)# deafult=1 --for test
 parser.add_option("--config_filename", dest="config_filename", help=
 				"Location to store all the metadata related to the training (to be used when testing).",
 				default="config.pickle")
-parser.add_option("--output_weight_path", dest="output_weight_path", help="Output path for weights.",default='gs://$BUCKET_NAME/$JOB_NAME/model_frcnn.hdf5')
-parser.add_option("--input_weight_path", dest="input_weight_path", help="Input path for weights. If not specified, will try to load default weights provided by keras.")
+parser.add_option("--output_weight_path", dest="output_weight_path", help="Output path for weights.",default='gs://input-your-bucket-name/train_on_gcloud/my_job_files/')
+parser.add_option("--input_weight_path", dest="input_weight_path", help="Input path for weights. If not specified, will try to load default weights provided by keras.",
+                  default='https://github.com/fchollet/deep-learning-models/releases/download/v0.2/resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5')
+parser.add_option("--bucket_path", dest="bucket_path", help="bucket path for stroing weights & configs",  default='gs://input-your-bucket-name/train_on_gcloud/my_job_files/')
 
 (options, args) = parser.parse_args()
 
-if not options.train_path:   # if filename is not given
+if not options.train_path:# if filename is not given
 	parser.error('Error: path to training data must be specified. Pass --path to command line')
+
+if options.parser == 'simple':
+	from simple_parser_text import get_data
+elif options.parser == 'simple_pick':
+	from simple_parser_pkl import get_data
+else:
+	raise ValueError("Command line option parser must be one of 'pascal_voc' or 'simple'")
 
 # pass the settings from the command line, and persist them in the config object
 C = config.Config()
@@ -68,7 +80,7 @@ if options.input_weight_path:
 	C.base_net_weights = options.input_weight_path
 else:
 	# set the path to weights based on backend and model
-	C.base_net_weights = nn.get_weight_path()#'resnet50_weights_th_dim_ordering_th_kernels_notop.h5'
+	C.base_net_weights = nn.get_weight_path()# 'resnet50_weights_th_dim_ordering_th_kernels_notop.h5'
 
 all_imgs, classes_count, class_mapping = get_data(options.train_path)
 
@@ -84,14 +96,14 @@ print('Training images per class:')
 pprint.pprint(classes_count)
 print('Num classes (including bg) = {}'.format(len(classes_count)))
 
-config_output_filename = options.config_filename#to test run & save config.pickle locally in cloudshell; For now
+config_output_filename = options.bucket_path + options.config_filename# gs://input-your-bucket-name/train_on_gcloud/my_job_files/config.pickle
 
-def new_open(name, mode, buffering=-1):#to open & load files from gcloud storage
+def new_open(name, mode, buffering=-1):# to open & load files from gcloud storage
         return file_io.FileIO(name, mode)
 
 
 with new_open(config_output_filename, 'wb') as config_f:
-	pickle.dump(C,config_f)#dumps config.pickle in cloudshell env
+	pickle.dump(C,config_f, protocol=2)# dumps config.pickle(compatible for python 2) in gcloud bucket
 	print('Config has been written to {}, and can be loaded when testing to ensure correct results'.format(config_output_filename))
 
 random.shuffle(all_imgs)
@@ -133,8 +145,11 @@ model_all = Model([img_input, roi_input], rpn[:2] + classifier)
 
 try:
 	print('loading weights from {}'.format(C.base_net_weights))
-	model_rpn.load_weights(C.base_net_weights, by_name=True)
-	model_classifier.load_weights(C.base_net_weights, by_name=True)
+
+	weights_path = get_file('base_weights.h5',C.base_net_weights)# downloading and adding weight paths
+	model_rpn.load_weights(weights_path)
+	model_classifier.load_weights(weights_path)
+	print('weights loaded.')
 except:
 	print('Could not load pretrained model weights. Weights can be found in the keras application folder \
 		https://github.com/fchollet/keras/tree/master/keras/applications')
@@ -268,7 +283,12 @@ for epoch_num in range(num_epochs):
 					if C.verbose:
 						print('Total loss decreased from {} to {}, saving weights'.format(best_loss,curr_loss))
 					best_loss = curr_loss
-					model_all.save_weights(C.model_path)
+					model_weights= 'model_frcnn.hdf5'
+					model_all.save_weights(model_weights)
+
+					with new_open(model_weights, mode='r') as infile:# to write hdf5 file to gs://input-your-bucket-name/train_on_gcloud/my_job_files/
+						with new_open(C.model_path + model_weights, mode='w+') as outfile:
+							outfile.write(infile.read())
 
 				break
 
