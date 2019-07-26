@@ -66,9 +66,9 @@ C.num_rois = int(options.num_rois)
 
 if options.network == 'vgg':
 	C.network = 'vgg'
-	from keras_frcnn import vgg as nn
+	import vgg as nn
 elif options.network == 'resnet50':
-	from keras_frcnn import resnet as nn
+	import resnet as nn
 	C.network = 'resnet50'
 else:
 	print('Not a valid model')
